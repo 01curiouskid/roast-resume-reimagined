@@ -101,6 +101,13 @@ export const getRandomLoadingMessage = (): string => {
   return loadingMessages[randomIndex];
 };
 
+// Define a custom type to work around the TypeScript errors
+type ResumeRoast = {
+  shareable_id: string;
+  roast: string;
+  is_extra_spicy: boolean;
+}
+
 // Save roast data in Supabase and fallback to sessionStorage
 export const saveRoastData = async (
   id: string, 
@@ -115,7 +122,7 @@ export const saveRoastData = async (
         shareable_id: id,
         roast,
         is_extra_spicy: isExtraSpicy
-      });
+      } as any);
     
     if (error) {
       console.error('Error saving roast to Supabase:', error);
@@ -157,7 +164,7 @@ export const getRoastData = async (id: string): Promise<{ roast: string; isExtra
       .from('resume_roasts')
       .select('roast, is_extra_spicy')
       .eq('shareable_id', id)
-      .single();
+      .single() as any;
     
     if (error || !data) {
       // If not found in Supabase, try sessionStorage
