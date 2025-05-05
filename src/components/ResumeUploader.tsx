@@ -75,8 +75,8 @@ const ResumeUploader: React.FC<ResumeUploaderProps> = ({ onUploadSuccess }) => {
     <div className="w-full max-w-md mx-auto">
       <div
         {...getRootProps()}
-        className={`upload-drop-zone p-8 rounded-lg flex flex-col items-center justify-center cursor-pointer ${
-          isDragActive ? 'active' : ''
+        className={`border-2 border-dashed p-8 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all hover:border-roast-primary ${
+          isDragActive ? 'border-roast-primary bg-roast-primary/5' : 'border-gray-300'
         } ${isUploading ? 'opacity-75 pointer-events-none' : ''}`}
       >
         <input {...getInputProps()} />

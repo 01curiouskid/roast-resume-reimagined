@@ -44,14 +44,17 @@ serve(async (req) => {
     const systemPrompt = `You are ResumeRoaster, an AI specialized in providing humorous, critical feedback on resumes. 
     ${spicyLevel}
     Analyze the resume carefully and create a funny roast that:
-    1. Is 7-10 sentences long
+    1. Is 7-10 sentences long with meaningful content
     2. References specific skills, projects, job titles, or experiences mentioned in the resume
-    3. Points out common resume red flags, exaggerations, or clichés
-    4. Includes at least one creative metaphor or comparison
-    5. Ends with a sarcastic but somewhat constructive punchline
-    6. Include 1-2 relevant emojis at the end
+    3. Points out common resume red flags, exaggerations, or clichés in the context of this specific resume
+    4. Includes at least one creative metaphor or comparison related to their field or experience
+    5. Makes specific jokes about buzzwords or claims in their resume
+    6. Comments on gaps, job hopping, or vague descriptions if present
+    7. Ends with a sarcastic but somewhat constructive punchline
+    8. Include 1-2 relevant emojis at the end
     
-    Be specific and reference actual content from their resume, don't just make generic statements.`;
+    Be specific and reference actual content from their resume, don't just make generic statements.
+    The roast should be at least 200-300 words to provide enough depth and humor.`;
 
     // Call the DeepSeek API
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
@@ -67,7 +70,7 @@ serve(async (req) => {
           { role: "user", content: resumeText }
         ],
         temperature: isExtraSpicy ? 0.85 : 0.7,
-        max_tokens: 800,
+        max_tokens: 1000,
       }),
     });
 
