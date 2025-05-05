@@ -1,4 +1,6 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 // Random funny titles for the landing page
 export const funnyTitles = [
   "Another Day, Another Delusion",
@@ -32,8 +34,30 @@ export const loadingMessages = [
   "Calibrating sarcasm levels..."
 ];
 
-// Generate a random roast (would be replaced with actual AI integration)
-export const generateRoast = (isExtraSpicy: boolean): Promise<string> => {
+// Generate a roast using the DeepSeek API via Supabase Edge Function
+export const generateRoast = async (resumeText: string, isExtraSpicy: boolean): Promise<string> => {
+  try {
+    // First try using our DeepSeek API via Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke('deepseek-resume-roast', {
+      body: { resumeText, isExtraSpicy }
+    });
+
+    if (error) {
+      console.error('Error calling DeepSeek API:', error);
+      // Fall back to local roasts if API call fails
+      return generateLocalRoast(isExtraSpicy);
+    }
+
+    return data.roast;
+  } catch (error) {
+    console.error('Error generating roast:', error);
+    // Fall back to local roasts if anything fails
+    return generateLocalRoast(isExtraSpicy);
+  }
+};
+
+// Fallback function to generate roasts locally if API fails
+const generateLocalRoast = (isExtraSpicy: boolean): Promise<string> => {
   const spicyRoasts = [
     "Your resume reads like a LinkedIn influencer's fever dream. 'Detail-oriented'? The only detail you're oriented towards is the office snack table. 📊🍩",
     "Congratulations on cramming every corporate buzzword into one document! Your 'synergized cross-functional team leadership' probably means you once ordered pizza for a meeting. 🍕💼",
@@ -61,7 +85,7 @@ export const generateRoast = (isExtraSpicy: boolean): Promise<string> => {
       const roasts = isExtraSpicy ? extraSpicyRoasts : spicyRoasts;
       const randomIndex = Math.floor(Math.random() * roasts.length);
       resolve(roasts[randomIndex]);
-    }, 3000);
+    }, 1500);
   });
 };
 
@@ -77,8 +101,36 @@ export const getRandomLoadingMessage = (): string => {
   return loadingMessages[randomIndex];
 };
 
-// Save roast data in sessionStorage (temporary storage)
-export const saveRoastData = (
+// Save roast data in Supabase and fallback to sessionStorage
+export const saveRoastData = async (
+  id: string, 
+  roast: string, 
+  isExtraSpicy: boolean
+): Promise<void> => {
+  try {
+    // Save to Supabase
+    const { error } = await supabase
+      .from('resume_roasts')
+      .insert({
+        shareable_id: id,
+        roast,
+        is_extra_spicy: isExtraSpicy
+      });
+    
+    if (error) {
+      console.error('Error saving roast to Supabase:', error);
+      // Fallback to sessionStorage
+      saveRoastToSessionStorage(id, roast, isExtraSpicy);
+    }
+  } catch (error) {
+    console.error('Error during Supabase save:', error);
+    // Fallback to sessionStorage
+    saveRoastToSessionStorage(id, roast, isExtraSpicy);
+  }
+};
+
+// Helper function to save to sessionStorage as fallback
+const saveRoastToSessionStorage = (
   id: string, 
   roast: string, 
   isExtraSpicy: boolean
@@ -88,7 +140,6 @@ export const saveRoastData = (
     roast,
     isExtraSpicy,
     timestamp: Date.now(),
-    // In a real app, we wouldn't store the actual resume here
   };
   
   sessionStorage.setItem(`roast_${id}`, JSON.stringify(roastData));
@@ -98,8 +149,34 @@ export const saveRoastData = (
   sessionStorage.setItem(`roast_${id}_expiry`, expiry.toString());
 };
 
-// Get roast data from sessionStorage
-export const getRoastData = (id: string): { roast: string; isExtraSpicy: boolean } | null => {
+// Get roast data from Supabase or sessionStorage
+export const getRoastData = async (id: string): Promise<{ roast: string; isExtraSpicy: boolean } | null> => {
+  try {
+    // Try to get from Supabase first
+    const { data, error } = await supabase
+      .from('resume_roasts')
+      .select('roast, is_extra_spicy')
+      .eq('shareable_id', id)
+      .single();
+    
+    if (error || !data) {
+      // If not found in Supabase, try sessionStorage
+      return getRoastFromSessionStorage(id);
+    }
+    
+    return {
+      roast: data.roast,
+      isExtraSpicy: data.is_extra_spicy
+    };
+  } catch (error) {
+    console.error('Error fetching roast from Supabase:', error);
+    // Fallback to sessionStorage
+    return getRoastFromSessionStorage(id);
+  }
+};
+
+// Helper function to get from sessionStorage as fallback
+const getRoastFromSessionStorage = (id: string): { roast: string; isExtraSpicy: boolean } | null => {
   const roastData = sessionStorage.getItem(`roast_${id}`);
   const expiry = sessionStorage.getItem(`roast_${id}_expiry`);
   

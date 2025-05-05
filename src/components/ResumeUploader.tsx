@@ -4,10 +4,10 @@ import { useDropzone } from 'react-dropzone';
 import { handleResumeUpload } from '@/utils/resume-utils';
 import { Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface ResumeUploaderProps {
-  onUploadSuccess: (fileUrl: string) => void;
+  onUploadSuccess: (data: { fileUrl: string, resumeText: string }) => void;
 }
 
 const ResumeUploader: React.FC<ResumeUploaderProps> = ({ onUploadSuccess }) => {
@@ -22,8 +22,8 @@ const ResumeUploader: React.FC<ResumeUploaderProps> = ({ onUploadSuccess }) => {
       setIsUploading(true);
       
       try {
-        const fileUrl = await handleResumeUpload(file);
-        onUploadSuccess(fileUrl);
+        const data = await handleResumeUpload(file);
+        onUploadSuccess(data);
         toast({
           title: "Upload successful!",
           description: "Preparing to roast your resume...",
